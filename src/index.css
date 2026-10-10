@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+:root {
+  /* Default: Dark Mode (Night Tarmac) */
+  --color-bg: #0F1411;
+  --color-card: #182019;
+  --color-border: #2A352D;
+  --color-text-primary: #F4F1E8;
+  --color-text-secondary: #9AA89E;
+  --color-primary-btn: #1FBF75;
+  --color-btn-text: #0F1411;
+  --color-pop: #C8F53A;
+  --color-track: #0A6B45;
+  --color-safe-card: #12301F;
+  --color-caution: #FFB01F;
+  --color-caution-text: #FFB01F;
+  --color-caution-tint: #2A2312;
+  --color-hazard: #FF5A5D;
+  --color-hazard-tint: #2D1416;
+  --color-sos: #C62828;
+  --color-verified: #6B9BFF;
+  --color-verified-tint: #14223A;
+  --color-header-bg: rgba(24, 32, 25, 0.95);
+  --color-bottom-bg: rgba(24, 32, 25, 0.95);
+}
+
+[data-theme="light"], .light-mode {
+  /* Light Mode (Daytime & Sunlight) */
+  --color-bg: #F7F5EE;
+  --color-card: #FFFFFF;
+  --color-border: #DDE3DC;
+  --color-text-primary: #0F1411;
+  --color-text-secondary: #55655A;
+  --color-primary-btn: #1FBF75;
+  --color-btn-text: #0F1411;
+  --color-pop: #C8F53A;
+  --color-track: #0A6B45;
+  --color-safe-card: #E3F6EA;
+  --color-caution: #FFB01F;
+  --color-caution-text: #9A5B00;
+  --color-caution-tint: #FFF3D6;
+  --color-hazard: #C62828;
+  --color-hazard-tint: #FDE6E6;
+  --color-sos: #C62828;
+  --color-verified: #1D4ED8;
+  --color-verified-tint: #E3ECFD;
+  --color-header-bg: rgba(255, 255, 255, 0.95);
+  --color-bottom-bg: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="dark"], .dark-mode {
+  /* Explicit Dark Mode */
+  --color-bg: #0F1411;
+  --color-card: #182019;
+  --color-border: #2A352D;
+  --color-text-primary: #F4F1E8;
+  --color-text-secondary: #9AA89E;
+  --color-primary-btn: #1FBF75;
+  --color-btn-text: #0F1411;
+  --color-pop: #C8F53A;
+  --color-track: #0A6B45;
+  --color-safe-card: #12301F;
+  --color-caution: #FFB01F;
+  --color-caution-text: #FFB01F;
+  --color-caution-tint: #2A2312;
+  --color-hazard: #FF5A5D;
+  --color-hazard-tint: #2D1416;
+  --color-sos: #C62828;
+  --color-verified: #6B9BFF;
+  --color-verified-tint: #14223A;
+  --color-header-bg: rgba(24, 32, 25, 0.95);
+  --color-bottom-bg: rgba(24, 32, 25, 0.95);
+}
+
+/* Multi-Font Typography System */
+.font-display {
+  font-family: 'Outfit', sans-serif;
+}
+
+.font-body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.font-telematics {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Safe Area Inset Helpers */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+}
+
+/* Mobile Screen & Touch Ergonomics */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+/* Custom scrollbar matching palette */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-btn);
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Remix Remix SafeDrive - Kinetic Road Safety Platform",
+  "description": "Interactive presentation prototype and real-time telematics dashboard pitching a gamified social mobility platform that converts road safety into status, rewards, and measurable impact.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,11 +1,42 @@
-<div align="center">
+# SafePod / SafeDrive - Kinetic Road Safety Platform
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+> Converting real-time vehicle telematics and road safety into status, driver rewards, and measurable life-saving impact.
 
-  <h1>Built with AI Studio</h2>
+---
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## 🌟 Key Features
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+- **Kinetic Radar & Speed Zone Enforcement**: Real-time GPS mapping with automated zonal speed limit detection, dynamic corridors, and community hazard pins (radar cameras, accident blackspots, potholes, EV fast chargers).
+- **Multi-Sensor Collision Detection**: 50Hz sensor fusion pipeline combining G-force accelerometer peaks, motorcycle lean/tilt angle analysis, and rapid velocity drops.
+- **Automated ICE Emergency Dispatch**: 10-second zero-touch emergency countdown with auto-dispatch of SMS & phone alerts to nominated emergency contacts with exact GPS coordinates.
+- **Kinetic Buffer & Distraction Monitoring**: Live scoring tracking following distance buffer (in seconds) and phone screen interaction penalties.
+- **Squads & SafeDriver Gamification**: Community leaderboards, streak rewards, and marketplace redemption for verified safe drivers.
 
-</div>
+---
+
+## 🚀 Quick Start
+
+### Frontend (Vite + React)
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+The frontend will run at `http://localhost:3000`.
+
+### Backend (FastAPI + PostgreSQL)
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+The API docs will be available at `http://localhost:8000/docs`.
+
+### Full Stack via Docker
+```bash
+docker-compose up --build
+```

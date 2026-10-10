@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: safedrive_db
+    restart: always
+    environment:
+      POSTGRES_USER: safedrive
+      POSTGRES_PASSWORD: safedrive_password
+      POSTGRES_DB: safedrive
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: safedrive_backend
+    restart: always
+    environment:
+      PORT: 8000
+      DATABASE_URL: postgresql://safedrive:safedrive_password@db:5432/safedrive
+      SECRET_KEY: safedrive-super-secret-production-jwt-key-38910
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: safedrive_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
