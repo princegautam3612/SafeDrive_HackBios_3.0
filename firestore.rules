@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for UserProfile
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 120)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 20)) &&
+             (!('historicalSafeScore' in data) || (data.historicalSafeScore is number && data.historicalSafeScore >= 0 && data.historicalSafeScore <= 100)) &&
+             (!('points' in data) || (data.points is number && data.points >= 0)) &&
+             (!('xp' in data) || (data.xp is number && data.xp >= 0));
+    }
+
+    // Validation for TripRecord
+    function isValidTripRecord(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.score is number && data.score >= 0 && data.score <= 100 &&
+             data.distanceKm is number && data.distanceKm >= 0;
+    }
+
+    // Validation for PointTransaction
+    function isValidPointTransaction(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.amount is number &&
+             data.type in ['earn', 'redeem'];
+    }
+
+    // Health check test connection path
+    match /test/{testId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Users collection and subcollections
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) && incoming().userId == userId;
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) && incoming().userId == userId;
+      allow delete: if false;
+
+      match /trips/{tripId} {
+        allow get: if isOwner(userId) && isValidId(tripId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(tripId) && isValidTripRecord(incoming()) && incoming().userId == userId;
+        allow update: if isOwner(userId) && isValidId(tripId) && isValidTripRecord(incoming()) && incoming().userId == userId;
+        allow delete: if false;
+      }
+
+      match /transactions/{transactionId} {
+        allow get: if isOwner(userId) && isValidId(transactionId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(transactionId) && isValidPointTransaction(incoming()) && incoming().userId == userId;
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+  }
+}

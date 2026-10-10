@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered rider profile and safety telemetry statistics",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 120 },
+        "phone": { "type": "string", "maxLength": 20 },
+        "avatar": { "type": "string", "maxLength": 500 },
+        "dlNumber": { "type": "string", "maxLength": 50 },
+        "dlVerified": { "type": "boolean" },
+        "joinedDate": { "type": "string", "maxLength": 50 },
+        "historicalSafeScore": { "type": "number" },
+        "totalKms": { "type": "number" },
+        "totalRides": { "type": "number" },
+        "points": { "type": "number" },
+        "xp": { "type": "number" },
+        "driverRole": { "type": "string", "maxLength": 80 },
+        "badgeLabel": { "type": "string", "maxLength": 80 }
+      },
+      "required": ["userId", "name"]
+    },
+    "TripRecord": {
+      "title": "TripRecord",
+      "description": "Completed ride telemetry record with score, distance and metrics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "startTime": { "type": "number" },
+        "endTime": { "type": "number" },
+        "dateStr": { "type": "string", "maxLength": 50 },
+        "distanceKm": { "type": "number" },
+        "durationSec": { "type": "number" },
+        "avgSpeedKmH": { "type": "number" },
+        "maxSpeedKmH": { "type": "number" },
+        "score": { "type": "number" },
+        "smoothBrakingPct": { "type": "number" },
+        "phoneFocusPct": { "type": "number" },
+        "co2SavedKg": { "type": "number" },
+        "pointsEarned": { "type": "number" },
+        "xpEarned": { "type": "number" },
+        "origin": { "type": "string", "maxLength": 200 },
+        "destination": { "type": "string", "maxLength": 200 }
+      },
+      "required": ["id", "userId", "score", "distanceKm"]
+    },
+    "PointTransaction": {
+      "title": "PointTransaction",
+      "description": "Reward points transaction log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 120 },
+        "date": { "type": "string", "maxLength": 50 },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["earn", "redeem"] },
+        "category": { "type": "string", "maxLength": 60 }
+      },
+      "required": ["id", "userId", "amount", "type"]
+    },
+    "TestConnection": {
+      "title": "TestConnection",
+      "description": "Connectivity test document for initial Firestore initialization",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "maxLength": 50 }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Rider user profile documents"
+    },
+    "/users/{userId}/trips/{tripId}": {
+      "schema": "TripRecord",
+      "description": "Rider trip telemetry subcollection"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "PointTransaction",
+      "description": "Rider rewards transactions subcollection"
+    },
+    "/test/{testId}": {
+      "schema": "TestConnection",
+      "description": "Firestore connection health probe document"
+    }
+  }
+}

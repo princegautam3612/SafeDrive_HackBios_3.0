@@ -15,9 +15,11 @@ import {
   Sparkles,
   Bike,
   Code2,
+  Flame,
 } from 'lucide-react';
 import { UserSessionPayload, UserProfile } from '../../types';
 import { REGISTERED_DRIVERS, RegisteredDriverRecord } from '../../data/driversRegistry';
+import { signInWithGoogle, saveUserProfileToFirestore } from '../../lib/firebase';
 
 interface LoginViewProps {
   onLoginSuccess: (session: UserSessionPayload) => void;
@@ -27,12 +29,12 @@ interface LoginViewProps {
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const [tab, setTab] = useState<'login' | 'register'>('login');
 
-  // Login form state
+  // Login form state (User and Password)
   const [loginUsername, setLoginUsername] = useState('arjun');
   const [loginPassword, setLoginPassword] = useState('password123');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  // Register form state
+  // Register form state (User, Password, Email, Phone)
   const [regUsername, setRegUsername] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regEmail, setRegEmail] = useState('');
@@ -43,6 +45,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // 1-Tap Fast Login for Developers
   const handleDeveloperFastLogin = (driverRecord?: RegisteredDriverRecord) => {
@@ -79,6 +82,91 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
         transactions: driver.transactions,
       });
     }, 250);
+  };
+
+  // Google Login via Firebase
+  const handleGoogleLogin = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+    setIsGoogleLoading(true);
+    try {
+      const fbUser = await signInWithGoogle();
+      const displayName = fbUser.displayName || fbUser.email?.split('@')[0] || 'Firebase Pilot';
+      const userPhone = fbUser.phoneNumber || '9876543210';
+      const userEmail = fbUser.email || `${displayName.toLowerCase()}@firebase.user`;
+      const generatedDl = `DL-04202500${Math.floor(10000 + Math.random() * 90000)}`;
+
+      const newProfile: UserProfile = {
+        name: displayName,
+        phone: userPhone,
+        email: userEmail,
+        avatar: fbUser.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+        dlNumber: generatedDl,
+        dlVerified: true,
+        dlDetails: {
+          dlNumber: generatedDl,
+          holderName: displayName.toUpperCase(),
+          issueDate: new Date().toLocaleDateString('en-GB'),
+          validUntil: '12-Aug-2045',
+          vehicleClasses: ['MCWG (Two-Wheeler)'],
+          issuingRTO: 'RTO Cloud Registry',
+          status: 'VERIFIED',
+          bloodGroup: 'B+',
+        },
+        isAuthenticated: true,
+        joinedDate: 'Joined with Firebase',
+        historicalSafeScore: 92,
+        totalKms: 35.4,
+        totalRides: 3,
+        autoDetectRidesEnabled: true,
+        autoDetectThresholdSpeed: 15,
+        driverRole: 'Firebase Verified Rider',
+        badgeLabel: 'FIREBASE CLOUD PILOT',
+      };
+
+      // Persist profile to Firestore
+      try {
+        await saveUserProfileToFirestore(fbUser.uid, newProfile);
+      } catch (e) {
+        console.warn('Could not sync to Firestore immediately:', e);
+      }
+
+      onLoginSuccess({
+        userProfile: newProfile,
+        vehicle: {
+          type: 'motorcycle',
+          model: 'Royal Enfield Hunter 350',
+          registrationNumber: `DL-01-FB-${Math.floor(1000 + Math.random() * 9000)}`,
+          fuelType: 'Petrol',
+        },
+        emergencyContact: {
+          name: 'Primary Emergency ICE',
+          phone: userPhone,
+          relationship: 'Family',
+        },
+        points: 400,
+        xp: 200,
+        trips: [],
+        transactions: [
+          {
+            id: `tx-fb-${Date.now()}`,
+            title: 'Firebase Account Linked',
+            date: 'Just now',
+            amount: 400,
+            type: 'earn',
+            category: 'Welcome Bonus',
+          },
+        ],
+      });
+    } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setErrorMessage('Sign-in cancelled. Please try again.');
+      } else {
+        setErrorMessage(err?.message || 'Firebase sign-in encountered an error.');
+      }
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   // User Login handler (username + password)
@@ -267,17 +355,30 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          <span
-            className="px-2.5 py-1 rounded-full text-[10px] font-telematics font-bold border flex items-center gap-1"
-            style={{
-              backgroundColor: 'var(--color-safe-card)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-primary-btn)',
-            }}
-          >
-            <ShieldCheck className="w-3 h-3" />
-            SECURE ACCESS
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="px-2 py-0.5 rounded-full text-[9px] font-telematics font-bold border flex items-center gap-1"
+              style={{
+                backgroundColor: 'rgba(255, 153, 0, 0.12)',
+                borderColor: 'rgba(255, 153, 0, 0.3)',
+                color: '#FF9900',
+              }}
+            >
+              <Flame className="w-3 h-3 text-[#FF9900]" />
+              FIREBASE
+            </span>
+            <span
+              className="px-2.5 py-0.5 rounded-full text-[9px] font-telematics font-bold border flex items-center gap-1"
+              style={{
+                backgroundColor: 'var(--color-safe-card)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-primary-btn)',
+              }}
+            >
+              <ShieldCheck className="w-3 h-3" />
+              SECURE
+            </span>
+          </div>
         </div>
 
         {/* Developer Fast Login Banner */}
@@ -289,7 +390,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             boxShadow: '0 4px 20px -2px rgba(31, 191, 117, 0.12)',
           }}
         >
-          <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold font-telematics" style={{ color: 'var(--color-primary-btn)' }}>
               <Code2 className="w-4 h-4" />
               <span>DEVELOPER PORTAL</span>
@@ -311,7 +412,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
 
           <button
             type="button"
-            disabled={isLoading}
+            disabled={isLoading || isGoogleLoading}
             onClick={() => handleDeveloperFastLogin()}
             className="w-full py-2.5 px-3 rounded-xl font-display font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] shadow-md hover:brightness-105"
             style={{
@@ -324,6 +425,39 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             <Sparkles className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Google Firebase Sign-In Option */}
+        <button
+          type="button"
+          disabled={isLoading || isGoogleLoading}
+          onClick={handleGoogleLogin}
+          className="w-full py-2.5 px-3 mb-3 rounded-xl border font-display font-bold text-xs flex items-center justify-center gap-2.5 cursor-pointer transition-all active:scale-[0.98] hover:bg-black/5 dark:hover:bg-white/5"
+          style={{
+            backgroundColor: 'var(--color-card)',
+            borderColor: 'var(--color-border)',
+            color: 'var(--color-text-primary)',
+          }}
+        >
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+            <path
+              fill="#4285F4"
+              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+            />
+          </svg>
+          <span>{isGoogleLoading ? 'Connecting to Firebase...' : 'Continue with Google (Firebase Auth)'}</span>
+        </button>
 
         {/* Tab Switcher: Login vs Register */}
         <div
@@ -433,7 +567,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="Enter password"
-                      className="w-full pl-9 pr-10 py-2 rounded-xl border text-xs focus:outline-none transition-colors"
+                      className="w-full pl-9 pr-9 py-2 rounded-xl border text-xs focus:outline-none transition-colors"
                       style={{
                         backgroundColor: 'var(--color-bg)',
                         borderColor: 'var(--color-border)',
@@ -443,17 +577,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                     <button
                       type="button"
                       onClick={() => setShowLoginPassword((prev) => !prev)}
-                      className="absolute right-3 top-2.5 cursor-pointer opacity-70 hover:opacity-100"
+                      className="absolute right-2.5 top-2.5 p-0.5 rounded cursor-pointer hover:opacity-75"
                       style={{ color: 'var(--color-text-secondary)' }}
                       title={showLoginPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showLoginPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Error Message */}
+              {/* Error Alert */}
               {errorMessage && (
                 <div
                   className="p-2.5 rounded-xl border text-xs flex items-center gap-2 text-left"
@@ -471,7 +605,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               {/* Submit Login Button */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isGoogleLoading}
                 className="w-full py-3 rounded-xl font-display font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] shadow-md hover:brightness-105"
                 style={{
                   backgroundColor: 'var(--color-primary-btn)',
@@ -500,7 +634,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               >
                 <div className="text-[10px] font-telematics font-bold tracking-wider uppercase flex items-center justify-between" style={{ color: 'var(--color-text-secondary)' }}>
                   <span>Rider Registration Form</span>
-                  <span style={{ color: 'var(--color-pop)' }}>All 4 Fields Required</span>
+                  <span style={{ color: 'var(--color-pop)' }}>User, Pass, Email &amp; Phone</span>
                 </div>
 
                 {/* 1. Username */}
@@ -538,8 +672,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                       autoComplete="new-password"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="Min 6 characters"
-                      className="w-full pl-9 pr-10 py-2 rounded-xl border text-xs focus:outline-none transition-colors"
+                      placeholder="At least 6 characters"
+                      className="w-full pl-9 pr-9 py-2 rounded-xl border text-xs focus:outline-none transition-colors"
                       style={{
                         backgroundColor: 'var(--color-bg)',
                         borderColor: 'var(--color-border)',
@@ -549,16 +683,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                     <button
                       type="button"
                       onClick={() => setShowRegPassword((prev) => !prev)}
-                      className="absolute right-3 top-2.5 cursor-pointer opacity-70 hover:opacity-100"
+                      className="absolute right-2.5 top-2.5 p-0.5 rounded cursor-pointer hover:opacity-75"
                       style={{ color: 'var(--color-text-secondary)' }}
                       title={showRegPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showRegPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
 
-                {/* 3. Email */}
+                {/* 3. Email Address */}
                 <div className="space-y-1 text-left">
                   <label className="text-[11px] font-telematics uppercase font-bold block" style={{ color: 'var(--color-text-secondary)' }}>
                     Email Address
@@ -584,38 +718,40 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                 {/* 4. Phone Number */}
                 <div className="space-y-1 text-left">
                   <label className="text-[11px] font-telematics uppercase font-bold block" style={{ color: 'var(--color-text-secondary)' }}>
-                    Phone Number
+                    Mobile Phone Number
                   </label>
-                  <div className="relative flex items-center">
-                    <div
-                      className="absolute left-3 flex items-center gap-1 font-telematics text-xs border-r pr-2"
-                      style={{
-                        borderColor: 'var(--color-border)',
-                        color: 'var(--color-text-secondary)',
-                      }}
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>+91</span>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 absolute left-3 top-2.5" style={{ color: 'var(--color-text-secondary)' }} />
+                    <div className="flex">
+                      <span
+                        className="inline-flex items-center px-2.5 rounded-l-xl border border-r-0 text-xs font-telematics font-bold select-none"
+                        style={{
+                          backgroundColor: 'var(--color-card)',
+                          borderColor: 'var(--color-border)',
+                          color: 'var(--color-text-secondary)',
+                        }}
+                      >
+                        +91
+                      </span>
+                      <input
+                        type="tel"
+                        autoComplete="tel"
+                        value={regPhone}
+                        onChange={(e) => setRegPhone(e.target.value)}
+                        placeholder="10-digit mobile number"
+                        className="w-full pl-3 pr-3 py-2 rounded-r-xl border text-xs focus:outline-none transition-colors"
+                        style={{
+                          backgroundColor: 'var(--color-bg)',
+                          borderColor: 'var(--color-border)',
+                          color: 'var(--color-text-primary)',
+                        }}
+                      />
                     </div>
-                    <input
-                      type="tel"
-                      maxLength={10}
-                      autoComplete="tel"
-                      value={regPhone}
-                      onChange={(e) => setRegPhone(e.target.value)}
-                      placeholder="9876543210"
-                      className="w-full pl-18 pr-3 py-2 rounded-xl border text-xs font-telematics focus:outline-none transition-colors"
-                      style={{
-                        backgroundColor: 'var(--color-bg)',
-                        borderColor: 'var(--color-border)',
-                        color: 'var(--color-text-primary)',
-                      }}
-                    />
                   </div>
                 </div>
               </div>
 
-              {/* Error Message */}
+              {/* Error Alert */}
               {errorMessage && (
                 <div
                   className="p-2.5 rounded-xl border text-xs flex items-center gap-2 text-left"
@@ -633,7 +769,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               {/* Submit Register Button */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isGoogleLoading}
                 className="w-full py-3 rounded-xl font-display font-black text-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] shadow-md hover:brightness-105"
                 style={{
                   backgroundColor: 'var(--color-primary-btn)',

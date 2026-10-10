@@ -28,6 +28,8 @@ import { EditICEModal } from './components/common/EditICEModal';
 import { accidentDetectionService } from './services/accidentDetection';
 import { AccidentEvent } from './types';
 import { api } from './lib/api';
+import { auth, logoutFirebase, saveTripToFirestore, getUserProfileFromFirestore } from './lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function App() {
   // Navigation
@@ -155,6 +157,30 @@ export default function App() {
       setShowAccidentModal(true);
     });
     return unsub;
+  }, []);
+
+  // Firebase Auth State Listener & Profile Synchronization
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        sessionStorage.setItem('safedrive_authenticated', 'true');
+        try {
+          const remoteProfile = await getUserProfileFromFirestore(fbUser.uid);
+          if (remoteProfile) {
+            setUserProfile((prev) => ({
+              ...prev,
+              name: remoteProfile.name || prev.name,
+              email: remoteProfile.email || fbUser.email || prev.email,
+              phone: remoteProfile.phone || prev.phone,
+              isAuthenticated: true,
+            }));
+          }
+        } catch (e) {
+          console.warn('Could not read user profile from Firestore:', e);
+        }
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleTriggerInstall = async () => {
@@ -305,6 +331,12 @@ export default function App() {
     setShowTripSummary(true);
     // Asynchronously submit trip to API / cloud store
     api.submitCompletedTrip(trip).catch(() => {});
+    // Persist trip record to Firebase Firestore if logged in
+    if (auth.currentUser) {
+      saveTripToFirestore(auth.currentUser.uid, trip).catch((err) => {
+        console.warn('Firestore trip sync notice:', err);
+      });
+    }
     // Update user profile statistics
     setUserProfile((prev) => ({
       ...prev,
@@ -335,6 +367,7 @@ export default function App() {
     sessionStorage.removeItem('safedrive_authenticated');
     sessionStorage.removeItem('safepod_authenticated');
     api.setToken(null);
+    logoutFirebase().catch(() => {});
     setUserProfile((prev) => ({
       ...prev,
       isAuthenticated: false,
